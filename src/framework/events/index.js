@@ -16,3 +16,12 @@ export function addEvent(element, propName, handler){
         });
     }
 }
+
+//Helper of Keyboard Events 
+export function handleKey(e, onEnter, onEscape) {
+   if(e.key === 'Enter' && onEnter){
+    onEnter(e);
+   } else if(e.key === 'Escape' && onEscape){
+    onEscape(e);
+   }
+}
