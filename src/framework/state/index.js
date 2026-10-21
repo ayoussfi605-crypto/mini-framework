@@ -6,11 +6,16 @@ export class State {
     }
 
     getState() {
+        return this.state;
     }
     
     setState(newState) {
     }
 
     subscribe(listiners){
+        this.listiners.push(listiners);
+        return () => {
+            this.listiners = this.listiners.filter(ele => ele !== listeners);
+        }
     }
 }
