@@ -1,48 +1,30 @@
-import createDom from "../framework/dom/createDom.js";
+import render from "../framework/dom/render.js";
+import State from "../framework/state/index.js";
 import h from "../framework/dom/h.js";
-import addEvent from "../framework/events/index.js";
-import createRouter from "../framework/router/index.js";
 
-const element = createDom(
-  h(
-    "button",
-    {
-      class: "btn",
-      click: () => {
-        console.log("Button clicked!");
+const state = new State({ count: 0 });
+const app = document.getElementById("app");
+
+function renderApp() {
+  const { count } = state.getState();
+
+  const vnode = h("div", { class: "main" }, [
+    h("h1", {}, `The counter is ${count}`),
+    h(
+      "button",
+      {
+        click: () => {
+          state.setState({
+            count: state.getState().count + 1,
+          });
+        },
       },
-    },
-    "Click me",
-  ),
-);
-console.log(element);
+      "Counter ++",
+    ),
+  ]);
 
-document.getElementById("app").appendChild(element);
+  render(vnode, app);
+}
 
-const btn = document.createElement("button");
-btn.textContent = "Test me";
-
-
-
-btn.textContent = "Test Duplicate Fix";
-addEvent(btn, "onClick", () => console.log("Clicked!"));
-addEvent(btn, "onClick", () => console.log("Clicked!"));
-
-// addEvent(btn, 'onClick', () => {
-//   alert('Event API work 100%!');
-// });
-
-// Define routes and their actions
-const router = createRouter({
-  "/": () => console.log("View: All Todos"),
-  "/active": () => console.log("View: Active Todos"),
-  "/completed": () => console.log("View: Completed Todos"),
-});
-
-// Start listening to URL changes
-router.start();
-
-// Test navigation manually in console or with buttons:
-// router.navigate('/active');
-
-document.getElementById("app").appendChild(btn);
+state.subscribe(renderApp);
+renderApp();

@@ -1,59 +1,124 @@
 import createDom from "./createDom.js";
 
-export default function updateDOM($parent, vNew, vOld, index = 0) {
-  const $currentChild = $parent.childNodes[index];
+function updateProps(element, oldProps = {}, newProps = {}) {
+  const keys = new Set([...Object.keys(oldProps), ...Object.keys(newProps)]);
 
-  if (!vNew) {
-    if ($currentChild) {
-      $parent.removeChild($currentChild);
-    }
-    return;
-  }
+  for (const key of keys) {
+    const oldValue = oldProps[key];
+    const newValue = newProps[key];
 
-  if (!vOld) {
-    $parent.appendChild(createDom(vNew)); // Fixed: createElement -> createDom
-    return;
-  }
+    if (oldValue === newValue) continue;
+    if (key === "key") continue;
 
-  if (
-    typeof vNew !== typeof vOld ||
-    (typeof vNew === "string" && vNew !== vOld) ||
-    (typeof vNew === "number" && vNew !== vOld) ||
-    vNew.type !== vOld.type
-  ) {
-    $parent.replaceChild(createDom(vNew), $currentChild); // Fixed: createElement -> createDom
-    return;
-  }
+    const isEvent =
+      key.startsWith("on") ||
+      [
+        "click",
+        "dblclick",
+        "input",
+        "change",
+        "submit",
+        "keydown",
+        "keyup",
+        "focus",
+        "blur",
+      ].includes(key);
 
-  // If it's a VNode element node
-  if (vNew.type) {
-    const oldProps = vOld.props || {};
-    const newProps = vNew.props || {};
-    const patchProps = { ...oldProps, ...newProps };
+    if (isEvent) {
+      const eventName = key.startsWith("on") ? key.slice(2).toLowerCase() : key;
 
-    for (const key in patchProps) {
-      const oldVal = oldProps[key];
-      const newVal = newProps[key];
+      element.__miniEvents ??= {};
 
-      if (newVal === undefined || newVal === null) {
-        $currentChild.removeAttribute(key);
-      } else if (typeof newVal === "function") {
-        // Handle event listeners updates if needed, or re-attach
-        if (oldVal !== newVal) {
-          if (oldVal) $currentChild.removeEventListener(key, oldVal);
-          $currentChild.addEventListener(key, newVal);
-        }
-      } else if (oldVal !== newVal) {
-        $currentChild.setAttribute(key, newVal);
+      const previousHandler = element.__miniEvents[eventName];
+
+      if (previousHandler) {
+        element.removeEventListener(eventName, previousHandler);
+        delete element.__miniEvents[eventName];
       }
+
+      if (typeof newValue === "function") {
+        element.addEventListener(eventName, newValue);
+        element.__miniEvents[eventName] = newValue;
+      }
+
+      continue;
     }
 
-    const vNewChildren = vNew.children || [];
-    const vOldChildren = vOld.children || [];
-    const maxLen = Math.max(vNewChildren.length, vOldChildren.length);
-
-    for (let i = 0; i < maxLen; i++) {
-      updateDOM($currentChild, vNewChildren[i], vOldChildren[i], i);
+    if (newValue == null || newValue === false) {
+      element.removeAttribute(key);
+      continue;
     }
+
+    if (newValue === true) {
+      element.setAttribute(key, "");
+      continue;
+    }
+
+    element.setAttribute(key, String(newValue));
   }
+}
+
+function updateDOM(parent, newVNode, oldVNode, index = 0) {
+  const current = parent.childNodes[index];
+
+  if (newVNode == null) {
+    if (current) parent.removeChild(current);
+    return;
+  }
+
+  if (oldVNode == null) {
+    parent.insertBefore(createDom(newVNode), current ?? null);
+    return;
+  }
+
+  const newIsPrimitive =
+    typeof newVNode === "string" || typeof newVNode === "number";
+
+  const oldIsPrimitive =
+    typeof oldVNode === "string" || typeof oldVNode === "number";
+
+  if (newIsPrimitive || oldIsPrimitive) {
+    if (
+      newIsPrimitive &&
+      oldIsPrimitive &&
+      typeof newVNode === typeof oldVNode
+    ) {
+      if (String(newVNode) !== String(oldVNode)) {
+        current.nodeValue = String(newVNode);
+      }
+    } else {
+      parent.replaceChild(createDom(newVNode), current);
+    }
+
+    return;
+  }
+
+  if (newVNode.type !== oldVNode.type) {
+    parent.replaceChild(createDom(newVNode), current);
+    return;
+  }
+
+  updateProps(current, oldVNode.props, newVNode.props);
+
+  const oldChildren = oldVNode.children ?? [];
+  const newChildren = newVNode.children ?? [];
+  const sharedLength = Math.min(oldChildren.length, newChildren.length);
+
+  for (let i = 0; i < sharedLength; i++) {
+    updateDOM(current, newChildren[i], oldChildren[i], i);
+  }
+
+  // Remove extra children from the end.
+  for (let i = oldChildren.length - 1; i >= newChildren.length; i--) {
+    current.removeChild(current.childNodes[i]);
+  }
+
+  // Append any newly added children in the correct order.
+  for (let i = oldChildren.length; i < newChildren.length; i++) {
+    current.appendChild(createDom(newChildren[i]));
+  }
+}
+
+export default function patch(oldVNode, newVNode, container) {
+  updateDOM(container, newVNode, oldVNode, 0);
 }
