@@ -1,1 +1,1 @@
-export { addEvent, handleKey } from './events/index.js';
+export { addEvent, removeEvents, handleKey } from './events/index.js';
