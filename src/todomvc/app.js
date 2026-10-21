@@ -1,5 +1,6 @@
-import createDom from "../framework/dom/createDom.js";
-import h from "../framework/dom/h.js";
+import {createDom} from "../framework/dom/createDom.js";
+import {h} from "../framework/dom/h.js";
+import { addEvent } from '../framework/events/index.js';
 
 const element = createDom(
   h(
@@ -16,3 +17,13 @@ const element = createDom(
 console.log(element);
 
 document.getElementById("app").appendChild(element);
+
+
+const btn = document.createElement('button');
+btn.textContent = 'Test me';
+
+addEvent(btn, 'onClick', () => {
+  alert('Event API work 100%!');
+});
+
+document.getElementById("app").appendChild(btn);
