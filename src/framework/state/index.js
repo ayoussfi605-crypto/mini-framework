@@ -1,7 +1,7 @@
 export class State {
     constructor(inistialState = {}) {
-        this.state = initialState;
-        this.listiners = [];
+        this.state = inistialState;
+        this.listeners = [];
 
     }
 
@@ -19,10 +19,10 @@ export class State {
 
     }
 
-    subscribe(listiners) {
-        this.listiners.push(listiners);
+    subscribe(listener) {
+        this.listeners.push(listener);
         return () => {
-            this.listiners = this.listiners.filter(ele => ele !== listeners);
+            this.listeners = this.listeners.filter(ele => ele !== listener);
         }
     }
 }
