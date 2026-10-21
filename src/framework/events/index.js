@@ -11,7 +11,7 @@ const EVENT_MAP = {
 };
 
 // Attach custom event listener and prevent duplicate listeners
-export function addEvent(element, propName, handler) {
+export default function addEvent(element, propName, handler) {
   // Get native DOM event name (e.g., 'onClick' -> 'click')
   const nativeEvent = EVENT_MAP[propName];
 

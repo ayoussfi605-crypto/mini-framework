@@ -1,13 +1,8 @@
 export default function addprop(vnode, element) {
-  console.log(vnode.props);
+  if (!vnode.props) return element;
 
   for (const [key, value] of Object.entries(vnode.props)) {
-    if (typeof value == "function") {
-      element.addEventListener(key, value);
-      continue;
-    }
-
-    if (value === null || typeof value === "undefined") {
+    if (value === null || value === undefined) {
       continue;
     }
     element.setAttribute(key, value);
