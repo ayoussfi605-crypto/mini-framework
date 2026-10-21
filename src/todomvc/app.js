@@ -22,8 +22,16 @@ document.getElementById("app").appendChild(element);
 const btn = document.createElement('button');
 btn.textContent = 'Test me';
 
-addEvent(btn, 'onClick', () => {
-  alert('Event API work 100%!');
-});
+const btn = document.createElement('button');
+document.getElementById("app").appendChild(btn);
+
+
+btn.textContent = 'Test Duplicate Fix';
+addEvent(btn, 'onClick', () => console.log('Clicked!'));
+addEvent(btn, 'onClick', () => console.log('Clicked!'));
+
+// addEvent(btn, 'onClick', () => {
+//   alert('Event API work 100%!');
+// });
 
 document.getElementById("app").appendChild(btn);
