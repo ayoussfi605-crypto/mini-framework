@@ -10,6 +10,8 @@ export class State {
     }
     
     setState(newState) {
+        this.state = newState;
+        this.listeners.forEach(listener => listener());
     }
 
     subscribe(listiners){
