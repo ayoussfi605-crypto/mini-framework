@@ -44,11 +44,9 @@ function updateProps(element, oldProps = {}, newProps = {}) {
       continue;
     }
 
-    // Update live DOM properties, not just HTML attributes.
     if (key === "value" && "value" in element) {
       const value = newValue == null ? "" : String(newValue);
 
-      // Avoid resetting the cursor when the value is already correct.
       if (element.value !== value) {
         element.value = value;
       }
@@ -131,12 +129,9 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
     updateDOM(current, newChildren[i], oldChildren[i], i);
   }
 
-  // Remove extra children from the end.
   for (let i = oldChildren.length - 1; i >= newChildren.length; i--) {
     current.removeChild(current.childNodes[i]);
   }
-
-  // Append new children.
   for (let i = oldChildren.length; i < newChildren.length; i++) {
     current.appendChild(createDom(newChildren[i]));
   }
