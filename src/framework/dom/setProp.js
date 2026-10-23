@@ -21,16 +21,41 @@ export default function addprop(vnode, element) {
       ].includes(key);
 
     if (isEvent) {
+      const eventName = key.startsWith("on") ? key.slice(2).toLowerCase() : key;
+
       if (typeof value !== "function") continue;
 
-      const eventName = key.startsWith("on") ? key.slice(2).toLowerCase() : key;
+      const previousHandler = element.__miniEvents[eventName];
+
+      if (previousHandler) {
+        element.removeEventListener(eventName, previousHandler);
+      }
 
       element.addEventListener(eventName, value);
       element.__miniEvents[eventName] = value;
       continue;
     }
 
-    if (value == null || value === false) continue;
+    // Handle live form properties.
+    if (key === "value" && "value" in element) {
+      element.value = value == null ? "" : String(value);
+      continue;
+    }
+
+    if (key === "checked" && "checked" in element) {
+      element.checked = Boolean(value);
+      continue;
+    }
+
+    if (key === "selected" && "selected" in element) {
+      element.selected = Boolean(value);
+      continue;
+    }
+
+    if (value == null || value === false) {
+      element.removeAttribute(key);
+      continue;
+    }
 
     if (value === true) {
       element.setAttribute(key, "");

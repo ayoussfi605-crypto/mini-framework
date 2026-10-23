@@ -44,6 +44,28 @@ function updateProps(element, oldProps = {}, newProps = {}) {
       continue;
     }
 
+    // Update live DOM properties, not just HTML attributes.
+    if (key === "value" && "value" in element) {
+      const value = newValue == null ? "" : String(newValue);
+
+      // Avoid resetting the cursor when the value is already correct.
+      if (element.value !== value) {
+        element.value = value;
+      }
+
+      continue;
+    }
+
+    if (key === "checked" && "checked" in element) {
+      element.checked = Boolean(newValue);
+      continue;
+    }
+
+    if (key === "selected" && "selected" in element) {
+      element.selected = Boolean(newValue);
+      continue;
+    }
+
     if (newValue == null || newValue === false) {
       element.removeAttribute(key);
       continue;
@@ -102,6 +124,7 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
 
   const oldChildren = oldVNode.children ?? [];
   const newChildren = newVNode.children ?? [];
+
   const sharedLength = Math.min(oldChildren.length, newChildren.length);
 
   for (let i = 0; i < sharedLength; i++) {
@@ -113,7 +136,7 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
     current.removeChild(current.childNodes[i]);
   }
 
-  // Append any newly added children in the correct order.
+  // Append new children.
   for (let i = oldChildren.length; i < newChildren.length; i++) {
     current.appendChild(createDom(newChildren[i]));
   }
