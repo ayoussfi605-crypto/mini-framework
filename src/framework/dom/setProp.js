@@ -1,4 +1,3 @@
-// src/framework/dom/setProp.js
 import { addEvent } from "../events/index.js";
 
 export default function addprop(vnode, element) {
@@ -7,7 +6,7 @@ export default function addprop(vnode, element) {
   for (const [key, value] of Object.entries(vnode.props)) {
     if (key === "key") continue;
 
-    // Check & attach events using your central addEvent
+    // Attach custom events
     if (key.startsWith("on")) {
       addEvent(element, key, value);
       continue;
@@ -29,7 +28,7 @@ export default function addprop(vnode, element) {
       continue;
     }
 
-    // Handle attributes
+    // Handle standard HTML attributes
     if (value == null || value === false) {
       element.removeAttribute(key);
       continue;
@@ -38,7 +37,7 @@ export default function addprop(vnode, element) {
     if (value === true) {
       element.setAttribute(key, "");
     } else {
-      element.setAttribute(key, String(newValue ?? value));
+      element.setAttribute(key, String(value));
     }
   }
 
