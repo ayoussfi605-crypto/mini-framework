@@ -1,4 +1,3 @@
-
 //EVENT_MAP (Translate) -> addEvent (Clean Old + Attach New) -> handleKey (Shortcuts) -> removeEvents (RAM Cleanup)
 // Map framework props to native browser DOM events
 const EVENT_MAP = {
