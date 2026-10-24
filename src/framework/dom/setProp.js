@@ -1,7 +1,7 @@
+import { addEvent } from "../events/index.js";
+
 export default function addprop(vnode, element) {
   if (!vnode.props) return element;
-
-  element.__miniEvents ??= {};
 
   for (const [key, value] of Object.entries(vnode.props)) {
     if (key === "key") continue;

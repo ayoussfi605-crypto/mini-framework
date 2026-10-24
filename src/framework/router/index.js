@@ -1,6 +1,6 @@
 // Framework Client-Side Router (Hash-based)
 
-export default function createRouter(routes = {}) {
+export function createRouter(routes = {}) {
   // Get current route path from URL hash (e.g. "#/active" -> "/active")
   function getPath() {
     const hash = window.location.hash.slice(1); // remove '#'

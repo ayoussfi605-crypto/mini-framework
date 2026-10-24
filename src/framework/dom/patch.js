@@ -1,4 +1,5 @@
 import createDom from "./createDom.js";
+import { addEvent, removeEvents } from "../events/index.js";
 
 function updateProps(element, oldProps = {}, newProps = {}) {
   const keys = new Set([...Object.keys(oldProps), ...Object.keys(newProps)]);
@@ -10,37 +11,9 @@ function updateProps(element, oldProps = {}, newProps = {}) {
     if (oldValue === newValue) continue;
     if (key === "key") continue;
 
-    const isEvent =
-      key.startsWith("on") ||
-      [
-        "click",
-        "dblclick",
-        "input",
-        "change",
-        "submit",
-        "keydown",
-        "keyup",
-        "focus",
-        "blur",
-      ].includes(key);
-
-    if (isEvent) {
-      const eventName = key.startsWith("on") ? key.slice(2).toLowerCase() : key;
-
-      element.__miniEvents ??= {};
-
-      const previousHandler = element.__miniEvents[eventName];
-
-      if (previousHandler) {
-        element.removeEventListener(eventName, previousHandler);
-        delete element.__miniEvents[eventName];
-      }
-
-      if (typeof newValue === "function") {
-        element.addEventListener(eventName, newValue);
-        element.__miniEvents[eventName] = newValue;
-      }
-
+    // Handle Events using custom addEvent (Clean old + Attach new)
+    if (key.startsWith("on")) {
+      addEvent(element, key, newValue);
       continue;
     }
 
@@ -81,8 +54,13 @@ function updateProps(element, oldProps = {}, newProps = {}) {
 function updateDOM(parent, newVNode, oldVNode, index = 0) {
   const current = parent.childNodes[index];
 
+  // 5. if remove element in DOM -> Clear memory using removeEvents!
   if (newVNode == null) {
-    if (current) parent.removeChild(current);
+    if (current) {
+      // Memory cleanup 
+      removeEvents(current); 
+      parent.removeChild(current);
+    }
     return;
   }
 
@@ -107,6 +85,8 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
         current.nodeValue = String(newVNode);
       }
     } else {
+      // Clear events of replaced node
+      removeEvents(current); 
       parent.replaceChild(createDom(newVNode), current);
     }
 
@@ -114,6 +94,8 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
   }
 
   if (newVNode.type !== oldVNode.type) {
+    // Clear events of replaced node
+    removeEvents(current); 
     parent.replaceChild(createDom(newVNode), current);
     return;
   }
@@ -130,7 +112,12 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
   }
 
   for (let i = oldChildren.length - 1; i >= newChildren.length; i--) {
-    current.removeChild(current.childNodes[i]);
+    const childToRemove = current.childNodes[i];
+    if (childToRemove) {
+      // Clear events of removed child
+      removeEvents(childToRemove);
+      current.removeChild(childToRemove);
+    }
   }
   for (let i = oldChildren.length; i < newChildren.length; i++) {
     current.appendChild(createDom(newChildren[i]));

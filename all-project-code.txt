@@ -1,0 +1,433 @@
+
+========================================
+FILE: ./src/framework/router/index.js
+========================================
+
+// Framework Client-Side Router (Hash-based)
+
+export default function createRouter(routes = {}) {
+  // Get current route path from URL hash (e.g. "#/active" -> "/active")
+  function getPath() {
+    const hash = window.location.hash.slice(1); // remove '#'
+    return hash || '/'; // Default route if hash is empty
+  }
+
+  // Find matching route and run its callback function
+  function handleRoute() {
+    const currentPath = getPath();
+    const routeCallback = routes[currentPath] || routes['/']; // Fallback to '/' if route not found
+    
+    if (typeof routeCallback === 'function') {
+      routeCallback(currentPath);
+    }
+  }
+
+  return {
+    // Navigate programmatically to a new path (e.g., router.navigate('/active'))
+    navigate(path) {
+      window.location.hash = path;
+    },
+
+    // Start listening for URL hash changes and execute initial route
+    start() {
+      // Listen to browser hash changes (Back/Forward buttons or clicking links)
+      window.addEventListener('hashchange', handleRoute);
+
+      // Execute route callback immediately on page load
+      handleRoute();
+    }
+  };
+}
+
+========================================
+FILE: ./src/framework/dom/h.js
+========================================
+
+import normalizeChildren from "./normalize.js";
+
+export default function h(type, props, ...children) {
+  if (typeof type !== "string" || type.trim() === "") {
+    throw new TypeError("h(): type must be a non-empty string");
+  }
+
+  if (props == null) {
+    props = {};
+  }
+
+  if (typeof props !== "object" || Array.isArray(props)) {
+    throw new TypeError("h(): props must be a plain object or null");
+  }
+
+  const prototype = Object.getPrototypeOf(props);
+
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw new TypeError("h(): props must be a plain object or null");
+  }
+
+  console.log({
+    type,
+    props,
+    children: normalizeChildren(children),
+  });
+
+  return {
+    type,
+    props,
+    children: normalizeChildren(children),
+  };
+}
+
+========================================
+FILE: ./src/framework/dom/patch.js
+========================================
+
+import createDom from "./createDom.js";
+
+function updateProps(element, oldProps = {}, newProps = {}) {
+  const keys = new Set([...Object.keys(oldProps), ...Object.keys(newProps)]);
+
+  for (const key of keys) {
+    const oldValue = oldProps[key];
+    const newValue = newProps[key];
+
+    if (oldValue === newValue) continue;
+    if (key === "key") continue;
+
+    const isEvent =
+      key.startsWith("on") ||
+      [
+        "click",
+        "dblclick",
+        "input",
+        "change",
+        "submit",
+        "keydown",
+        "keyup",
+        "focus",
+        "blur",
+      ].includes(key);
+
+    if (isEvent) {
+      const eventName = key.startsWith("on") ? key.slice(2).toLowerCase() : key;
+
+      element.__miniEvents ??= {};
+
+      const previousHandler = element.__miniEvents[eventName];
+
+      if (previousHandler) {
+        element.removeEventListener(eventName, previousHandler);
+        delete element.__miniEvents[eventName];
+      }
+
+      if (typeof newValue === "function") {
+        element.addEventListener(eventName, newValue);
+        element.__miniEvents[eventName] = newValue;
+      }
+
+      continue;
+    }
+
+    if (key === "value" && "value" in element) {
+      const value = newValue == null ? "" : String(newValue);
+
+      if (element.value !== value) {
+        element.value = value;
+      }
+
+      continue;
+    }
+
+    if (key === "checked" && "checked" in element) {
+      element.checked = Boolean(newValue);
+      continue;
+    }
+
+    if (key === "selected" && "selected" in element) {
+      element.selected = Boolean(newValue);
+      continue;
+    }
+
+    if (newValue == null || newValue === false) {
+      element.removeAttribute(key);
+      continue;
+    }
+
+    if (newValue === true) {
+      element.setAttribute(key, "");
+      continue;
+    }
+
+    element.setAttribute(key, String(newValue));
+  }
+}
+
+function updateDOM(parent, newVNode, oldVNode, index = 0) {
+  const current = parent.childNodes[index];
+
+  if (newVNode == null) {
+    if (current) parent.removeChild(current);
+    return;
+  }
+
+  if (oldVNode == null) {
+    parent.insertBefore(createDom(newVNode), current ?? null);
+    return;
+  }
+
+  const newIsPrimitive =
+    typeof newVNode === "string" || typeof newVNode === "number";
+
+  const oldIsPrimitive =
+    typeof oldVNode === "string" || typeof oldVNode === "number";
+
+  if (newIsPrimitive || oldIsPrimitive) {
+    if (
+      newIsPrimitive &&
+      oldIsPrimitive &&
+      typeof newVNode === typeof oldVNode
+    ) {
+      if (String(newVNode) !== String(oldVNode)) {
+        current.nodeValue = String(newVNode);
+      }
+    } else {
+      parent.replaceChild(createDom(newVNode), current);
+    }
+
+    return;
+  }
+
+  if (newVNode.type !== oldVNode.type) {
+    parent.replaceChild(createDom(newVNode), current);
+    return;
+  }
+
+  updateProps(current, oldVNode.props, newVNode.props);
+
+  const oldChildren = oldVNode.children ?? [];
+  const newChildren = newVNode.children ?? [];
+
+  const sharedLength = Math.min(oldChildren.length, newChildren.length);
+
+  for (let i = 0; i < sharedLength; i++) {
+    updateDOM(current, newChildren[i], oldChildren[i], i);
+  }
+
+  for (let i = oldChildren.length - 1; i >= newChildren.length; i--) {
+    current.removeChild(current.childNodes[i]);
+  }
+  for (let i = oldChildren.length; i < newChildren.length; i++) {
+    current.appendChild(createDom(newChildren[i]));
+  }
+}
+
+export default function patch(oldVNode, newVNode, container) {
+  updateDOM(container, newVNode, oldVNode, 0);
+}
+
+========================================
+FILE: ./src/framework/dom/render.js
+========================================
+
+import createDom from "./createDom.js";
+import patch from "./patch.js";
+
+const previousVNodes = new WeakMap();
+
+export default function render(vnode, container) {
+  if (!(container instanceof Element)) {
+    throw new TypeError("render(): container must be a valid DOM element");
+  }
+
+  if (!vnode || typeof vnode !== "object") {
+    throw new TypeError("render(): vnode must be a valid VNode");
+  }
+
+  const oldVNode = previousVNodes.get(container);
+
+  if (!oldVNode) {
+    const dom = createDom(vnode);
+    container.replaceChildren(dom);
+  } else {
+    patch(oldVNode, vnode, container);
+  }
+
+  previousVNodes.set(container, vnode);
+}
+
+========================================
+FILE: ./src/framework/dom/setProp.js
+========================================
+
+export default function addprop(vnode, element) {
+  if (!vnode.props) return element;
+
+  element.__miniEvents ??= {};
+
+  for (const [key, value] of Object.entries(vnode.props)) {
+    if (key === "key") continue;
+
+    const isEvent =
+      key.startsWith("on") ||
+      [
+        "click",
+        "dblclick",
+        "input",
+        "change",
+        "submit",
+        "keydown",
+        "keyup",
+        "focus",
+        "blur",
+      ].includes(key);
+
+    if (isEvent) {
+      const eventName = key.startsWith("on") ? key.slice(2).toLowerCase() : key;
+
+      if (typeof value !== "function") continue;
+
+      const previousHandler = element.__miniEvents[eventName];
+
+      if (previousHandler) {
+        element.removeEventListener(eventName, previousHandler);
+      }
+
+      element.addEventListener(eventName, value);
+      element.__miniEvents[eventName] = value;
+      continue;
+    }
+
+    // Handle live form properties.
+    if (key === "value" && "value" in element) {
+      element.value = value == null ? "" : String(value);
+      continue;
+    }
+
+    if (key === "checked" && "checked" in element) {
+      element.checked = Boolean(value);
+      continue;
+    }
+
+    if (key === "selected" && "selected" in element) {
+      element.selected = Boolean(value);
+      continue;
+    }
+
+    if (value == null || value === false) {
+      element.removeAttribute(key);
+      continue;
+    }
+
+    if (value === true) {
+      element.setAttribute(key, "");
+    } else {
+      element.setAttribute(key, String(value));
+    }
+  }
+
+  return element;
+}
+
+========================================
+FILE: ./src/framework/dom/normalize.js
+========================================
+
+export default function normalizeChildren(children) {
+  return children
+    .flat(Infinity)
+    .filter((child) => {
+      return (
+        child !== null && child !== undefined && typeof child !== "boolean"
+      );
+    })
+    .map((child) => {
+      if (typeof child === "number") {
+        return String(child);
+      }
+
+      return child;
+    });
+}
+
+========================================
+FILE: ./src/framework/dom/createDom.js
+========================================
+
+import addprop from "./setProp.js";
+
+export default function createDom(vnode) {
+  if (typeof vnode === "string" || typeof vnode === "number") {
+    return document.createTextNode(vnode);
+  }
+
+  let element = document.createElement(vnode.type);
+
+  if (vnode.props) {
+     addprop(vnode, element);
+  }
+
+  if (vnode.children) {
+    vnode.children.forEach((child) => {
+      element.appendChild(createDom(child));
+    });
+  }
+
+  return element;
+}
+
+========================================
+FILE: ./src/framework/state/index.js
+========================================
+
+export default class State {
+    constructor(inistialState = {}) {
+        this.state = inistialState;
+        this.listeners = [];
+
+    }
+
+    getState() {
+        return this.state;
+    }
+
+    setState(newState) {
+        const mergedState = { ...this.state, ...newState };
+
+        if (JSON.stringify(this.state) !== JSON.stringify(mergedState)) {
+            this.state = mergedState;
+            this.listeners.forEach(listener => listener());
+        }
+
+    }
+
+    subscribe(listener) {
+        this.listeners.push(listener);
+        return () => {
+            this.listeners = this.listeners.filter(ele => ele !== listener);
+        }
+    }
+}
+
+========================================
+FILE: ./src/framework/index.js
+========================================
+
+export { addEvent, removeEvents, handleKey } from './events/index.js';
+export { createRouter } from './router/index.js';
+
+========================================
+FILE: ./src/todomvc/index.html
+========================================
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
