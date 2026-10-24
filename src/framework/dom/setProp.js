@@ -1,36 +1,38 @@
+import { addEvent } from "../events/index.js";
+
 export default function addprop(vnode, element) {
   if (!vnode.props) return element;
-
-  element.__miniEvents ??= {};
 
   for (const [key, value] of Object.entries(vnode.props)) {
     if (key === "key") continue;
 
-    const isEvent =
-      key.startsWith("on") ||
-      [
-        "click",
-        "dblclick",
-        "input",
-        "change",
-        "submit",
-        "keydown",
-        "keyup",
-        "focus",
-        "blur",
-      ].includes(key);
-
-    if (isEvent) {
-      if (typeof value !== "function") continue;
-
-      const eventName = key.startsWith("on") ? key.slice(2).toLowerCase() : key;
-
-      element.addEventListener(eventName, value);
-      element.__miniEvents[eventName] = value;
+    // if prop event (start whit "on" like onClick, onKeyDown)
+    if (key.startsWith("on")) {
+      addEvent(element, key, value);
       continue;
     }
 
-    if (value == null || value === false) continue;
+    // Handle live form properties (value, checked, selected)
+    if (key === "value" && "value" in element) {
+      element.value = value == null ? "" : String(value);
+      continue;
+    }
+
+    if (key === "checked" && "checked" in element) {
+      element.checked = Boolean(value);
+      continue;
+    }
+
+    if (key === "selected" && "selected" in element) {
+      element.selected = Boolean(value);
+      continue;
+    }
+
+    // Handle regular HTML attributes
+    if (value == null || value === false) {
+      element.removeAttribute(key);
+      continue;
+    }
 
     if (value === true) {
       element.setAttribute(key, "");

@@ -6,6 +6,7 @@ const EVENT_MAP = {
   onInput: 'input',
   onChange: 'change',
   onKeyDown: 'keydown',
+  onKeyUp: 'keyup', 
   onSubmit: 'submit',
   onDblClick: 'dblclick'
 };
