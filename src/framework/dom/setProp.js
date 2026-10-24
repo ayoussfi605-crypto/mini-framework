@@ -1,3 +1,4 @@
+// src/framework/dom/setProp.js
 import { addEvent } from "../events/index.js";
 
 export default function addprop(vnode, element) {
@@ -6,37 +7,13 @@ export default function addprop(vnode, element) {
   for (const [key, value] of Object.entries(vnode.props)) {
     if (key === "key") continue;
 
-    const isEvent =
-      key.startsWith("on") ||
-      [
-        "click",
-        "dblclick",
-        "input",
-        "change",
-        "submit",
-        "keydown",
-        "keyup",
-        "focus",
-        "blur",
-      ].includes(key);
-
-    if (isEvent) {
-      const eventName = key.startsWith("on") ? key.slice(2).toLowerCase() : key;
-
-      if (typeof value !== "function") continue;
-
-      const previousHandler = element.__miniEvents[eventName];
-
-      if (previousHandler) {
-        element.removeEventListener(eventName, previousHandler);
-      }
-
-      element.addEventListener(eventName, value);
-      element.__miniEvents[eventName] = value;
+    // Check & attach events using your central addEvent
+    if (key.startsWith("on")) {
+      addEvent(element, key, value);
       continue;
     }
 
-    // Handle live form properties.
+    // Handle live form properties
     if (key === "value" && "value" in element) {
       element.value = value == null ? "" : String(value);
       continue;
@@ -52,6 +29,7 @@ export default function addprop(vnode, element) {
       continue;
     }
 
+    // Handle attributes
     if (value == null || value === false) {
       element.removeAttribute(key);
       continue;
@@ -60,7 +38,7 @@ export default function addprop(vnode, element) {
     if (value === true) {
       element.setAttribute(key, "");
     } else {
-      element.setAttribute(key, String(value));
+      element.setAttribute(key, String(newValue ?? value));
     }
   }
 

@@ -5,7 +5,7 @@ FILE: ./src/framework/router/index.js
 
 // Framework Client-Side Router (Hash-based)
 
-export default function createRouter(routes = {}) {
+export function createRouter(routes = {}) {
   // Get current route path from URL hash (e.g. "#/active" -> "/active")
   function getPath() {
     const hash = window.location.hash.slice(1); // remove '#'
@@ -82,6 +82,7 @@ FILE: ./src/framework/dom/patch.js
 ========================================
 
 import createDom from "./createDom.js";
+import { addEvent, removeEvents } from "../events/index.js";
 
 function updateProps(element, oldProps = {}, newProps = {}) {
   const keys = new Set([...Object.keys(oldProps), ...Object.keys(newProps)]);
@@ -93,37 +94,9 @@ function updateProps(element, oldProps = {}, newProps = {}) {
     if (oldValue === newValue) continue;
     if (key === "key") continue;
 
-    const isEvent =
-      key.startsWith("on") ||
-      [
-        "click",
-        "dblclick",
-        "input",
-        "change",
-        "submit",
-        "keydown",
-        "keyup",
-        "focus",
-        "blur",
-      ].includes(key);
-
-    if (isEvent) {
-      const eventName = key.startsWith("on") ? key.slice(2).toLowerCase() : key;
-
-      element.__miniEvents ??= {};
-
-      const previousHandler = element.__miniEvents[eventName];
-
-      if (previousHandler) {
-        element.removeEventListener(eventName, previousHandler);
-        delete element.__miniEvents[eventName];
-      }
-
-      if (typeof newValue === "function") {
-        element.addEventListener(eventName, newValue);
-        element.__miniEvents[eventName] = newValue;
-      }
-
+    // Handle Events using custom addEvent (Clean old + Attach new)
+    if (key.startsWith("on")) {
+      addEvent(element, key, newValue);
       continue;
     }
 
@@ -146,7 +119,6 @@ function updateProps(element, oldProps = {}, newProps = {}) {
       element.selected = Boolean(newValue);
       continue;
     }
-
     if (newValue == null || newValue === false) {
       element.removeAttribute(key);
       continue;
@@ -164,8 +136,13 @@ function updateProps(element, oldProps = {}, newProps = {}) {
 function updateDOM(parent, newVNode, oldVNode, index = 0) {
   const current = parent.childNodes[index];
 
+  // 5. if remove element in DOM -> Clear memory using removeEvents!
   if (newVNode == null) {
-    if (current) parent.removeChild(current);
+    if (current) {
+      // Memory cleanup 
+      removeEvents(current); 
+      parent.removeChild(current);
+    }
     return;
   }
 
@@ -190,6 +167,8 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
         current.nodeValue = String(newVNode);
       }
     } else {
+      // Clear events of replaced node
+      removeEvents(current); 
       parent.replaceChild(createDom(newVNode), current);
     }
 
@@ -197,6 +176,8 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
   }
 
   if (newVNode.type !== oldVNode.type) {
+    // Clear events of replaced node
+    removeEvents(current); 
     parent.replaceChild(createDom(newVNode), current);
     return;
   }
@@ -213,7 +194,12 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
   }
 
   for (let i = oldChildren.length - 1; i >= newChildren.length; i--) {
-    current.removeChild(current.childNodes[i]);
+    const childToRemove = current.childNodes[i];
+    if (childToRemove) {
+      // Clear events of removed child
+      removeEvents(childToRemove);
+      current.removeChild(childToRemove);
+    }
   }
   for (let i = oldChildren.length; i < newChildren.length; i++) {
     current.appendChild(createDom(newChildren[i]));
@@ -258,10 +244,10 @@ export default function render(vnode, container) {
 FILE: ./src/framework/dom/setProp.js
 ========================================
 
+import { addEvent } from "../events/index.js";
+
 export default function addprop(vnode, element) {
   if (!vnode.props) return element;
-
-  element.__miniEvents ??= {};
 
   for (const [key, value] of Object.entries(vnode.props)) {
     if (key === "key") continue;
@@ -405,6 +391,76 @@ export default class State {
             this.listeners = this.listeners.filter(ele => ele !== listener);
         }
     }
+}
+
+========================================
+FILE: ./src/framework/events/index.js
+========================================
+
+//EVENT_MAP (Translate) -> addEvent (Clean Old + Attach New) -> handleKey (Shortcuts) -> removeEvents (RAM Cleanup)
+// Map framework props to native browser DOM events
+const EVENT_MAP = {
+  onClick: 'click',
+  onInput: 'input',
+  onChange: 'change',
+  onKeyDown: 'keydown',
+  onKeyUp: 'keyup', 
+  onSubmit: 'submit',
+  onDblClick: 'dblclick'
+};
+
+// Attach custom event listener and prevent duplicate listeners
+export function addEvent(element, propName, handler) {
+  // Get native DOM event name (e.g., 'onClick' -> 'click')
+  const nativeEvent = EVENT_MAP[propName];
+
+  // Stop if event name is invalid or handler is not a function
+  if (!nativeEvent || typeof handler !== 'function') return;
+
+  // Create listener storage object if it does not exist
+  if (!element._listeners) {
+    element._listeners = {};
+  }
+
+  // Remove old event listener if it already exists
+  if (element._listeners[propName]) {
+    element.removeEventListener(nativeEvent, element._listeners[propName]);
+  }
+
+  // Save new handler in element storage
+  element._listeners[propName] = handler;
+
+  // Add new event listener to the native DOM element
+  element.addEventListener(nativeEvent, handler);
+}
+
+// Remove all event listeners when element is deleted from DOM
+export function removeEvents(element) {
+  // Stop if element has no saved listeners
+  if (!element._listeners) return;
+
+  // Loop through all saved event handlers
+  for (const propName in element._listeners) {
+    const nativeEvent = EVENT_MAP[propName];
+    if (nativeEvent) {
+      // Remove each event listener from browser RAM
+      element.removeEventListener(nativeEvent, element._listeners[propName]);
+    }
+  }
+
+  // Delete storage property to completely clear memory
+  delete element._listeners;
+}
+
+// Helper function for handling keyboard shortcuts (Enter & Escape)
+export function handleKey(e, onEnter, onEscape) {
+  // Execute onEnter callback if Enter key is pressed
+  if (e.key === 'Enter' && onEnter) {
+    onEnter(e);
+  // Execute onEscape callback if Escape key is pressed
+  } else if (e.key === 'Escape' && onEscape) {
+    onEscape(e);
+  }
 }
 
 ========================================
