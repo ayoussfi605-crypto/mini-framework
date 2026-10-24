@@ -36,7 +36,6 @@ function updateProps(element, oldProps = {}, newProps = {}) {
       element.selected = Boolean(newValue);
       continue;
     }
-
     if (newValue == null || newValue === false) {
       element.removeAttribute(key);
       continue;
