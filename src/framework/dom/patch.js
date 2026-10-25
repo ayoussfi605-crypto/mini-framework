@@ -11,7 +11,6 @@ function updateProps(element, oldProps = {}, newProps = {}) {
     if (oldValue === newValue) continue;
     if (key === "key") continue;
 
-    // Handle Events using custom addEvent (Clean old + Attach new)
     if (key.startsWith("on")) {
       addEvent(element, key, newValue);
       continue;
@@ -53,10 +52,8 @@ function updateProps(element, oldProps = {}, newProps = {}) {
 function updateDOM(parent, newVNode, oldVNode, index = 0) {
   const current = parent.childNodes[index];
 
-  // 5. if remove element in DOM -> Clear memory using removeEvents!
   if (newVNode == null) {
     if (current) {
-      // Memory cleanup 
       removeEvents(current); 
       parent.removeChild(current);
     }
@@ -84,7 +81,6 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
         current.nodeValue = String(newVNode);
       }
     } else {
-      // Clear events of replaced node
       removeEvents(current); 
       parent.replaceChild(createDom(newVNode), current);
     }
@@ -93,7 +89,6 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
   }
 
   if (newVNode.type !== oldVNode.type) {
-    // Clear events of replaced node
     removeEvents(current); 
     parent.replaceChild(createDom(newVNode), current);
     return;
@@ -113,7 +108,6 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
   for (let i = oldChildren.length - 1; i >= newChildren.length; i--) {
     const childToRemove = current.childNodes[i];
     if (childToRemove) {
-      // Clear events of removed child
       removeEvents(childToRemove);
       current.removeChild(childToRemove);
     }
