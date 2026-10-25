@@ -19,12 +19,6 @@ export default function h(type, props, ...children) {
     throw new TypeError("h(): props must be a plain object or null");
   }
 
-  console.log({
-    type,
-    props,
-    children: normalizeChildren(children),
-  });
-
   return {
     type,
     props,
