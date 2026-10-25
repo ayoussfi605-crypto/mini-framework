@@ -14,7 +14,7 @@ export class State {
 
         if (JSON.stringify(this.state) !== JSON.stringify(mergedState)) {
             this.state = mergedState;
-            this.listeners.forEach(listener => listener());
+            this.notify();
         }
 
     }
@@ -29,5 +29,13 @@ export class State {
         return () => {
             this.listeners.delete(listener);
         };
+    }
+
+    notify() {
+        for (const listener of [...this.listeners]) {
+            if (!this.listeners.has(listener)) continue;
+
+            listener(this.state, this.version);
+        }
     }
 }
