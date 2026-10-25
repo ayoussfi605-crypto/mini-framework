@@ -10,13 +10,15 @@ export class State {
     }
 
     setState(newState) {
-        const mergedState = { ...this.state, ...newState };
+        const nextState = typeof newState === "function" ? newState(this.state) : newState;
 
-        if (JSON.stringify(this.state) !== JSON.stringify(mergedState)) {
-            this.state = mergedState;
-            this.notify();
+        if (Object.is(this.state, nextState)) {
+            return;
         }
-
+        
+        this.state = nextState;
+        this.version++;
+        this.notify();
     }
 
     subscribe(listener) {
