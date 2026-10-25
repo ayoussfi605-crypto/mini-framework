@@ -1,3 +1,8 @@
+export default class State {
+    constructor(inistialState = {}) {
+        this.state = inistialState;
+        this.listeners = [];
+
 export class State {
     constructor(initialState = {}, { batch = 'microtask' } = {}) {
         this.state = initialState;
