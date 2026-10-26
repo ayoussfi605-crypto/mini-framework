@@ -10,13 +10,37 @@ const EVENT_MAP = {
   onDblClick: 'dblclick'
 };
 
+// Remove one custom event listener from an element
+export function removeEvent(element, propName) {
+  const nativeEvent = EVENT_MAP[propName];
+
+  if (!nativeEvent || !element._listeners) return;
+
+  const handler = element._listeners[propName];
+
+  if (!handler) return;
+
+  element.removeEventListener(nativeEvent, handler);
+  delete element._listeners[propName];
+
+  if (Object.keys(element._listeners).length === 0) {
+    delete element._listeners;
+  }
+}
+
 // Attach custom event listener and prevent duplicate listeners
 export function addEvent(element, propName, handler) {
   // Get native DOM event name (e.g., 'onClick' -> 'click')
   const nativeEvent = EVENT_MAP[propName];
 
-  // Stop if event name is invalid or handler is not a function
-  if (!nativeEvent || typeof handler !== 'function') return;
+  // Stop if the event name is unsupported
+  if (!nativeEvent) return;
+
+  // A missing/non-function handler means the prop was removed.
+  if (typeof handler !== 'function') {
+    removeEvent(element, propName);
+    return;
+  }
 
   // Create listener storage object if it does not exist
   if (!element._listeners) {
@@ -38,7 +62,7 @@ export function addEvent(element, propName, handler) {
 // Remove all event listeners when element is deleted from DOM
 export function removeEvents(element) {
   // Stop if element has no saved listeners
-  if (!element._listeners) return;
+  if (!element || !element._listeners) return;
 
   // Loop through all saved event handlers
   for (const propName in element._listeners) {

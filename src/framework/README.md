@@ -19,6 +19,7 @@ import {
   normalizeChildren,
   State,
   addEvent,
+  removeEvent,
   removeEvents,
   handleKey,
   createRouter

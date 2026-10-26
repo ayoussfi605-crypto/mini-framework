@@ -520,8 +520,9 @@ Creates a hash router.
 
 ### Event helpers
 
-- `addEvent(element, propName, handler)` registers a custom event prop.
-- `removeEvents(element)` removes stored listeners from an element.
+- `addEvent(element, propName, handler)` registers a custom event prop. If `handler` is not a function, it removes the existing listener for that prop.
+- `removeEvent(element, propName)` removes one stored listener from an element.
+- `removeEvents(element)` removes all stored listeners from an element.
 - `handleKey(event, onEnter, onEscape)` runs a callback for Enter or Escape.
 
 ## TodoMVC

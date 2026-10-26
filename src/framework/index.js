@@ -9,5 +9,5 @@ export { default as patch } from "./dom/patch.js";
 export { default as render } from "./dom/render.js";
 
 export { State } from "./state/index.js";
-export { addEvent, removeEvents, handleKey } from "./events/index.js";
+export { addEvent, removeEvent, removeEvents, handleKey } from "./events/index.js";
 export { createRouter } from "./router/index.js";
