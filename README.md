@@ -243,6 +243,8 @@ Supported event props:
 | `onKeyUp` | `keyup` |
 | `onSubmit` | `submit` |
 | `onDblClick` | `dblclick` |
+| `onBlur` | `blur` |
+| `onFocus` | `focus` |
 
 The callback receives the native browser event, so you can call `event.preventDefault()` and read `event.target`, `event.key`, and so on.
 
@@ -543,6 +545,7 @@ Implemented behavior:
 - delete a todo;
 - double-click to edit;
 - Enter saves an edit;
+- clicking away saves an edit;
 - Escape cancels an edit;
 - All / Active / Completed filters;
 - URL changes for Active and Completed;
@@ -585,7 +588,7 @@ Run the app from the repository root, then verify:
 - [ ] Clear completed removes only completed todos.
 - [ ] Toggle-all marks every todo complete or incomplete.
 - [ ] Double-clicking a todo opens the edit input.
-- [ ] Enter saves an edit; Escape cancels it.
+- [ ] Enter saves an edit; clicking away saves it; Escape cancels it.
 - [ ] Editing to an empty title removes the todo.
 - [ ] The app uses no React, Vue, Angular, or similar library.
 

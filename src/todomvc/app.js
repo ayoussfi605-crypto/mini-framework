@@ -137,7 +137,11 @@ function cancelEdit() {
 
 function setFilter(filter) {
   if (store.getState().filter !== filter) {
-    store.setState({ filter });
+    store.setState({
+      filter,
+      editingId: null,
+      editTitle: "",
+    });
   }
 }
 
@@ -212,6 +216,11 @@ function todoItem(todo, editingId) {
             } else if (event.key === "Escape") {
               event.preventDefault();
               cancelEdit();
+            }
+          },
+          onBlur: () => {
+            if (store.getState().editingId === todo.id) {
+              commitEdit(todo.id);
             }
           },
         })

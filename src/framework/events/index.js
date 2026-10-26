@@ -5,9 +5,11 @@ const EVENT_MAP = {
   onInput: 'input',
   onChange: 'change',
   onKeyDown: 'keydown',
-  onKeyUp: 'keyup', 
+  onKeyUp: 'keyup',
   onSubmit: 'submit',
-  onDblClick: 'dblclick'
+  onDblClick: 'dblclick',
+  onBlur: 'blur',
+  onFocus: 'focus'
 };
 
 // Remove one custom event listener from an element
