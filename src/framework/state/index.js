@@ -9,8 +9,9 @@ export class State {
         return this.state;
     }
 
-    setState(newState) {
-        this.state = newState
+    setState(update) {
+        const changes = typeof update === "function" ? update(this.state) : update;
+        this.state = { ...this.state, ...changes };
         this.listeners.forEach(listener => listener(this.state));
     }
 
