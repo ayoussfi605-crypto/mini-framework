@@ -49,6 +49,27 @@ function updateProps(element, oldProps = {}, newProps = {}) {
   }
 }
 
+// Reconcile a list of children positionally inside `parent`.
+function patchChildren(parent, oldChildren = [], newChildren = []) {
+  const sharedLength = Math.min(oldChildren.length, newChildren.length);
+
+  for (let i = 0; i < sharedLength; i++) {
+    updateDOM(parent, newChildren[i], oldChildren[i], i);
+  }
+
+  for (let i = oldChildren.length - 1; i >= newChildren.length; i--) {
+    const childToRemove = parent.childNodes[i];
+    if (childToRemove) {
+      removeEvents(childToRemove);
+      parent.removeChild(childToRemove);
+    }
+  }
+
+  for (let i = oldChildren.length; i < newChildren.length; i++) {
+    parent.appendChild(createDom(newChildren[i]));
+  }
+}
+
 function updateDOM(parent, newVNode, oldVNode, index = 0) {
   const current = parent.childNodes[index];
 
@@ -96,27 +117,19 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
 
   updateProps(current, oldVNode.props, newVNode.props);
 
-  const oldChildren = oldVNode.children ?? [];
-  const newChildren = newVNode.children ?? [];
-
-  const sharedLength = Math.min(oldChildren.length, newChildren.length);
-
-  for (let i = 0; i < sharedLength; i++) {
-    updateDOM(current, newChildren[i], oldChildren[i], i);
-  }
-
-  for (let i = oldChildren.length - 1; i >= newChildren.length; i--) {
-    const childToRemove = current.childNodes[i];
-    if (childToRemove) {
-      removeEvents(childToRemove);
-      current.removeChild(childToRemove);
-    }
-  }
-  for (let i = oldChildren.length; i < newChildren.length; i++) {
-    current.appendChild(createDom(newChildren[i]));
-  }
+  patchChildren(current, oldVNode.children ?? [], newVNode.children ?? []);
 }
 
 export default function patch(oldVNode, newVNode, container) {
+  // A fragment root is a flat list of siblings inside the container.
+  if (Array.isArray(oldVNode) || Array.isArray(newVNode)) {
+    patchChildren(
+      container,
+      Array.isArray(oldVNode) ? oldVNode : [oldVNode],
+      Array.isArray(newVNode) ? newVNode : [newVNode]
+    );
+    return;
+  }
+
   updateDOM(container, newVNode, oldVNode, 0);
 }

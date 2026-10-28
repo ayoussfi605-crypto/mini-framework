@@ -1,9 +1,9 @@
 import { h, render, State, createRouter } from "../framework/index.js";
 
-const app = document.querySelector("#app");
+const app = document.querySelector("#root");
 
 if (!app) {
-  throw new Error('TodoMVC: missing root element with id="app"');
+  throw new Error('TodoMVC: missing root element with id="root"');
 }
 
 function filterFromPath(path) {
@@ -187,8 +187,8 @@ function todoItem(todo, editingId) {
       { class: "view" },
       h("input", {
         class: "toggle",
-        type: "checkbox",
         "data-testid": "todo-item-toggle",
+        type: "checkbox",
         checked: todo.completed,
         onChange: () => toggleTodo(todo.id),
       }),
@@ -248,20 +248,17 @@ function view() {
   const completed = todos.length - remaining;
   const allCompleted = todos.length > 0 && completed === todos.length;
 
-  return h(
-    "section",
-    { class: "todoapp", id: "root" },
+  return [
     h(
       "header",
       { class: "header", "data-testid": "header" },
       h("h1", {}, "todos"),
       h("input", {
         class: "new-todo",
-        type: "text",
         "data-testid": "text-input",
         "aria-label": "New Todo Input",
         placeholder: "What needs to be done?",
-        autofocus: true,
+        type: "text",
         value: draft,
         onInput: (event) => store.setState({ draft: event.target.value }),
         onKeyDown: (event) => {
@@ -285,8 +282,8 @@ function view() {
         h("input", {
           class: "toggle-all",
           id: "toggle-all",
-          type: "checkbox",
           "data-testid": "toggle-all",
+          type: "checkbox",
           checked: allCompleted,
           onChange: toggleAll,
         }),
@@ -330,8 +327,8 @@ function view() {
         },
         "Clear completed"
       )
-    )
-  );
+    ),
+  ];
 }
 
 function renderApp() {

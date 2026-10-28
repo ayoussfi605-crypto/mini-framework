@@ -13,6 +13,7 @@ No React, Vue, Angular, or similar UI framework is used.
 - [Creating elements](#creating-elements)
 - [Adding attributes and properties](#adding-attributes-and-properties)
 - [Nesting elements](#nesting-elements)
+- [Fragments](#fragments)
 - [Handling events](#handling-events)
 - [Shared state](#shared-state)
 - [Routing](#routing)
@@ -208,6 +209,33 @@ h("ul", {}, [
 ```
 
 The result is a single flat list of `li` children.
+
+## Fragments
+
+A fragment renders a list of sibling nodes with **no wrapper element**. Describe one by passing an **array** of virtual nodes where a single root would normally go:
+
+```javascript
+import { h, render } from "./src/framework/index.js";
+
+const app = document.querySelector("#app");
+
+render(
+  [
+    h("header", { class: "header" }, h("h1", {}, "todos")),
+    h("main", { class: "main" }, h("p", {}, "Content")),
+    h("footer", { class: "footer" }, "Footer")
+  ],
+  app
+);
+```
+
+The container receives three children (`header`, `main`, `footer`) directly; there is no extra `div` between the container and them. A fragment also works as a nested child, where it behaves like the flattened child arrays described above:
+
+```javascript
+h("ul", {}, [h("li", {}, "One"), h("li", {}, "Two")]);
+```
+
+On later renders, `patch()` compares a fragment's members positionally, exactly like a normal child list. This is how the TodoMVC app mounts its `header`, `main`, and `footer` straight into the `<section class="todoapp" id="root">` element declared in `index.html`.
 
 ## Handling events
 
@@ -427,7 +455,7 @@ h() -> virtual node tree -> normalizeChildren() -> createDom() -> real DOM
 
 1. **`h()`** builds a virtual node `{ type, props, children }`.
 2. **`normalizeChildren()`** flattens arrays, removes empty values, and converts numbers to strings.
-3. **`createDom()`** creates real elements and text nodes recursively. Attributes, properties, and events are applied through `setProp()`.
+3. **`createDom()`** creates real elements and text nodes recursively. Attributes, properties, and events are applied through `setProp()`. A fragment (an array of virtual nodes) becomes a `DocumentFragment`, so its members mount as siblings.
 4. **`render(vnode, container)`** mounts the tree on the first call. On later calls it retrieves the previous virtual tree for that container and calls `patch()`.
 5. **`patch()`** compares old and new nodes:
    - different types are replaced;
@@ -471,7 +499,7 @@ Normalizes an array of children. Returns a flat array with strings, numbers conv
 
 ### `createDom(vnode)`
 
-Creates a real DOM node from a virtual node. Primarily used internally by `render()` and `patch()`.
+Creates a real DOM node from a virtual node. For a fragment (an array of virtual nodes) it returns a `DocumentFragment` containing the rendered children. Primarily used internally by `render()` and `patch()`.
 
 ### `render(vnode, container)`
 
@@ -482,7 +510,8 @@ render(h("div", {}, "Hello"), document.querySelector("#app"));
 ```
 
 - `container` must be a DOM `Element`.
-- `vnode` must be a virtual node object.
+- `vnode` must be a virtual node object, or a fragment (an array of virtual nodes).
+- A fragment renders and patches its members as direct children of `container`, with no wrapper element.
 - The first call replaces the container's current children.
 - Later calls patch the existing tree.
 - Returns `undefined`.
@@ -522,7 +551,7 @@ Creates a hash router.
 
 ## TodoMVC
 
-The TodoMVC app is in `src/todomvc/app.js`. It uses only the framework APIs:
+The TodoMVC app is in `src/todomvc/app.js`. It mounts into the `<section class="todoapp" id="root">` element declared in `index.html` and renders its `header`, `main`, and `footer` as a fragment. It uses only the framework APIs:
 
 - `h()` for the entire UI;
 - `render()` for mounting and patching;
@@ -592,5 +621,5 @@ Run the app from the repository root, then verify:
 - The event map is intentionally small. Add new event props in `src/framework/events/index.js` if needed.
 - Routing is hash-based; there is no History API mode.
 - `render()` keeps one previous virtual tree per container. Do not manually replace the container's children after the first render.
-- No server-side rendering, fragments, portals, or SVG namespace handling.
+- No server-side rendering, portals, or SVG namespace handling.
 - The framework is educational and not a production replacement for mature UI frameworks.
