@@ -180,7 +180,7 @@ function todoItem(todo, editingId) {
     "li",
     {
       class: classes.join(" "),
-      "data-id": todo.id,
+      "data-testid": "todo-item",
     },
     h(
       "div",
@@ -188,24 +188,31 @@ function todoItem(todo, editingId) {
       h("input", {
         class: "toggle",
         type: "checkbox",
+        "data-testid": "todo-item-toggle",
         checked: todo.completed,
         onChange: () => toggleTodo(todo.id),
       }),
       h(
         "label",
         {
+          "data-testid": "todo-item-label",
           onDblClick: () => startEditing(todo.id),
         },
         todo.title
       ),
       h("button", {
         class: "destroy",
+        "data-testid": "todo-item-button",
+        "aria-label": "Delete todo",
         onClick: () => deleteTodo(todo.id),
       })
     ),
     editingId === todo.id
       ? h("input", {
           class: "edit",
+          type: "text",
+          "data-testid": "text-input",
+          "aria-label": "Edit todo",
           value: store.getState().editTitle,
           onInput: (event) =>
             store.setState({ editTitle: event.target.value }),
@@ -243,45 +250,55 @@ function view() {
 
   return h(
     "section",
-    { class: "todoapp" },
+    { class: "todoapp", id: "root" },
     h(
       "header",
-      { class: "header" },
+      { class: "header", "data-testid": "header" },
       h("h1", {}, "todos"),
-      h(
-        "form",
-        {
-          onSubmit: (event) => {
+      h("input", {
+        class: "new-todo",
+        type: "text",
+        "data-testid": "text-input",
+        "aria-label": "New Todo Input",
+        placeholder: "What needs to be done?",
+        autofocus: true,
+        value: draft,
+        onInput: (event) => store.setState({ draft: event.target.value }),
+        onKeyDown: (event) => {
+          if (event.key === "Enter") {
             event.preventDefault();
             addTodo(store.getState().draft);
-          },
+          }
         },
-        h("input", {
-          class: "new-todo",
-          placeholder: "What needs to be done?",
-          autofocus: true,
-          value: draft,
-          onInput: (event) => store.setState({ draft: event.target.value }),
-        })
-      )
+      })
     ),
     h(
-      "section",
+      "main",
       {
         class: "main",
+        "data-testid": "main",
         hidden: todos.length === 0,
       },
-      h("input", {
-        id: "toggle-all",
-        class: "toggle-all",
-        type: "checkbox",
-        checked: allCompleted,
-        onChange: toggleAll,
-      }),
-      h("label", { for: "toggle-all" }, "Mark all as complete"),
+      h(
+        "div",
+        { class: "toggle-all-container" },
+        h("input", {
+          class: "toggle-all",
+          id: "toggle-all",
+          type: "checkbox",
+          "data-testid": "toggle-all",
+          checked: allCompleted,
+          onChange: toggleAll,
+        }),
+        h(
+          "label",
+          { class: "toggle-all-label", for: "toggle-all" },
+          "Toggle All Input"
+        )
+      ),
       h(
         "ul",
-        { class: "todo-list" },
+        { class: "todo-list", "data-testid": "todo-list" },
         visibleTodos.map((todo) => todoItem(todo, editingId))
       )
     ),
@@ -289,31 +306,30 @@ function view() {
       "footer",
       {
         class: "footer",
+        "data-testid": "footer",
         hidden: todos.length === 0,
       },
       h(
         "span",
         { class: "todo-count" },
-        h("strong", {}, String(remaining)),
-        ` ${remaining === 1 ? "item" : "items"} left`
+        `${remaining} ${remaining === 1 ? "item" : "items"} left!`
       ),
       h(
         "ul",
-        { class: "filters" },
+        { class: "filters", "data-testid": "footer-navigation" },
         filterLink("All", "/", "all", filter),
         filterLink("Active", "/active", "active", filter),
         filterLink("Completed", "/completed", "completed", filter)
       ),
-      completed > 0
-        ? h(
-            "button",
-            {
-              class: "clear-completed",
-              onClick: clearCompleted,
-            },
-            "Clear completed"
-          )
-        : null
+      h(
+        "button",
+        {
+          class: "clear-completed",
+          hidden: completed === 0,
+          onClick: clearCompleted,
+        },
+        "Clear completed"
+      )
     )
   );
 }

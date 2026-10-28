@@ -36,7 +36,7 @@ No React, Vue, Angular, or similar UI framework is used.
 
 ```text
 .
-├── index.html                  # Root entry point (recommended way to run the app)
+├── index.html                  # Root entry point; open this to run the app
 ├── package.json                # Start scripts; no runtime dependencies
 ├── README.md                   # This documentation
 └── src/
@@ -55,7 +55,6 @@ No React, Vue, Angular, or similar UI framework is used.
     │   └── README.md           # Short pointer to this document
     ├── todomvc/
     │   ├── app.js              # TodoMVC application
-    │   ├── index.html          # Alternate TodoMVC entry point
     │   └── styles.css          # TodoMVC styles
     └── docs/README.md          # Documentation pointer
 ```
@@ -80,12 +79,6 @@ http://localhost:8080/
 
 ```bash
 python3 -m http.server 8080
-```
-
-You can also open the alternate entry point:
-
-```text
-http://localhost:8080/src/todomvc/
 ```
 
 Do not open the HTML files with a `file://` URL. JavaScript modules require an HTTP server.
