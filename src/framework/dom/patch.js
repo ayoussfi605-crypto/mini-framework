@@ -8,14 +8,6 @@ function updateProps(element, oldProps = {}, newProps = {}) {
     const oldValue = oldProps[key];
     const newValue = newProps[key];
 
-    if (oldValue === newValue) continue;
-    if (key === "key") continue;
-
-    if (key.startsWith("on")) {
-      addEvent(element, key, newValue);
-      continue;
-    }
-
     if (key === "value" && "value" in element) {
       const value = newValue == null ? "" : String(newValue);
 
@@ -35,6 +27,15 @@ function updateProps(element, oldProps = {}, newProps = {}) {
       element.selected = Boolean(newValue);
       continue;
     }
+
+    if (oldValue === newValue) continue;
+    if (key === "key") continue;
+
+    if (key.startsWith("on")) {
+      addEvent(element, key, newValue);
+      continue;
+    }
+
     if (newValue == null || newValue === false) {
       element.removeAttribute(key);
       continue;
@@ -75,7 +76,7 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
 
   if (newVNode == null) {
     if (current) {
-      removeEvents(current); 
+      removeEvents(current);
       parent.removeChild(current);
     }
     return;
@@ -102,7 +103,7 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
         current.nodeValue = String(newVNode);
       }
     } else {
-      removeEvents(current); 
+      removeEvents(current);
       parent.replaceChild(createDom(newVNode), current);
     }
 
@@ -110,7 +111,7 @@ function updateDOM(parent, newVNode, oldVNode, index = 0) {
   }
 
   if (newVNode.type !== oldVNode.type) {
-    removeEvents(current); 
+    removeEvents(current);
     parent.replaceChild(createDom(newVNode), current);
     return;
   }
@@ -126,7 +127,7 @@ export default function patch(oldVNode, newVNode, container) {
     patchChildren(
       container,
       Array.isArray(oldVNode) ? oldVNode : [oldVNode],
-      Array.isArray(newVNode) ? newVNode : [newVNode]
+      Array.isArray(newVNode) ? newVNode : [newVNode],
     );
     return;
   }
